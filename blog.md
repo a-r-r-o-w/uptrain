@@ -61,6 +61,10 @@ print(json.dumps(fill_masker(masked_sentence), indent=2))
 
 Instead of using BERT, the above code uses DistilBERT - a smaller, faster and almost equally performant model. The pipeline invokes the model and retrieves the top 5 (can be changed by passing the `top_k` attribute which defaults to 5) predictions for each mask. Since there are three masks, the model will return a total of 15 predictions (5 for each word). The output is as follows:
 
+<details>
+<summary>Output</summary>
+<br />
+
 ```json
 [
   [
@@ -92,6 +96,8 @@ Instead of using BERT, the above code uses DistilBERT - a smaller, faster and al
   ]
 ]
 ```
+
+</details>
 
 As can be seen from the output, the model assigns a confidence "score" for different predictions. It then sorts them based on this score and higher score predictions show up in the top_k outputs.
 
