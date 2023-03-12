@@ -195,6 +195,6 @@ def create_sample_dataset(dataset_size):
     return data
 ```
 
-<details>
+</details>
 
 The entire code for the finetuning example can be found [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/).
