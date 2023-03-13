@@ -44,11 +44,22 @@ class ConceptDrift(AbstractMonitor):
 
     def base_check(self, inputs, outputs, gts=None, extra_args={}):
         batch_acc = self.measurable.compute_and_log(inputs, outputs, gts, extra_args)
-        batch_acc = self._preprocess(batch_acc)
 
         for acc in batch_acc:
             alert = None
-            self.algo.update(acc)
+
+            # This is duct tape code. We need to optimize the branch out
+            # for efficient processing. Earlier, we tried to simply perform:
+            # np.array([0 if acc else 1 for acc in batch_acc])
+            # The above does not work because when we append to self.acc_arr,
+            # we require the original value and not processed value otherwise
+            # we get the inverse plot of what is expected
+            if self.algorithm == DataDriftAlgo.DDM:
+                # River DDM Drift requires 0 if model prediction is correct
+                # and 1 if model prediction is incorrect
+                self.algo.update(0 if acc else 1)
+            else:
+                self.algo.update(acc)
 
             if self.algo.drift_detected and not self.drift_alerted:
                 alert = f"Drift detected with {self.algorithm} at time: {self.counter}"
@@ -71,9 +82,3 @@ class ConceptDrift(AbstractMonitor):
                 self.log_handler.add_alert(
                     "Model Performance Degradation Alert 🚨", alert, self.dashboard_name
                 )
-    
-    def _preprocess (self, batch):
-        if self.algorithm == DataDriftAlgo.DDM:
-            return np.array([0 if x else 1 for x in batch])
-        else:
-            return np.array(batch)
