@@ -354,4 +354,54 @@ There are a few things to look at here. UpTrain provides different Monitors for 
 
 Now that we have our retraining dataset tailored to our objective, we can begin with the retraining/finetuning process. HuggingFace offers user-friendly APIs that simplify the training and finetuning of models. If you want to understand how this is done for the above example, please refer to the complete source code available at here [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/).
 
+After finetuning is performed, we can visualize the different metrics that are used to study the performance of large language models. Two such metrics that we'll take a look at are [training/validation loss](https://en.wikipedia.org/wiki/Training,_validation,_and_test_data_sets) and [perplexity](https://www.wikiwand.com/en/Perplexity).
+
+**Loss Plot**
+
+![loss.png](./loss.png)
+
+**Perplexity Plot**
+
+![perplexity.png](./perplexity.png)
+
+The code for plotting can be found in the linked notebook above. We can see that the performance of the model on our finetuning dataset improves with time as the values for both the loss and perplexity decrease. This is great!
+
+Let's see what the predictions of the model on our pre-defined test sentences and verify whether the model has become better at our defined finetuning task or not.
+
+<details>
+<summary>Predictions</summary>
+<br />
+
+```
+                Text: Nike shoes are very [MASK]
+ Original Top tokens: ['popular', 'durable', 'expensive', 'comfortable', 'fashionable']
+Finetuned Top tokens: ['durable', 'versatile', 'fashionable', 'efficient', 'comfortable']
+
+                Text: Nike atheletic wear is known for being very [MASK]
+ Original Top tokens: ['durable', 'expensive', 'popular', 'fashionable', 'rare']
+Finetuned Top tokens: ['durable', 'fashionable', 'lightweight', 'efficient', 'flexible']
+
+                Text: Nike [MASK] shoes are very comfortable
+ Original Top tokens: ['polo', 'golf', 'swim', 'tennis', 'nike']
+Finetuned Top tokens: ['training', 'basketball', 'soccer', 'running', 'football']
+
+                Text: Trousers and Hoodies made by [MASK] are not very expensive
+ Original Top tokens: ['women', 'manufacturers', 'men', 'amateurs', 'slaves']
+Finetuned Top tokens: ['nike', 'honda', 'samsung', 'yamaha', 'bmw']
+
+                Text: Nike tshirts are famous for being [MASK]
+ Original Top tokens: ['.', ':', ';', 'colorful', 'unique']
+Finetuned Top tokens: ['inexpensive', 'cheap', 'lightweight', 'versatile', 'durable']
+```
+
+</details>
+
+We can see from the above output that the model is doing much better at predicting masked words that have positive sentiment associated with them. In the first example, we see that the model no longer predicts masked words such as "expensive" among its top 5 predictions, which is exactly what we want! An interesting case to look at is the predictions for example 3. We no longer have swim shoes!
+
+We can also visualize the mask prediction confidence for different predictions, which is a helpful way of visualizing what words the model thinks are good substitutions. The code for this can be found in the linked notebook.
+
+![predictions.png](./predictions.png)
+
+And with that, we have learnt how to finetune a Large Language Model as well as how to use UpTrain for improving model performance and monitoring!
+
 In conclusion, finetuning large language models like BERT can be a powerful tool for solving specific natural language processing tasks. UpTrain provides a simple and easy to use interface that requires minimal code to perform model monitoring, data drift checks, data integrity checks, edge case detection, model bias tracking, custom metric monitoring and much more. Checkout the UpTrain repository [here](https://github.com/uptrain-ai/uptrain).
