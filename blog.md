@@ -14,7 +14,7 @@ Today, there is a growing number of LLMs that are gaining recognition, including
 
 LLMs have had significant evolution since their origin. The first models were shallow and relied on the n-gram technique that simply counted occurrences of words or phrases. Later on, neural language models came about, such as recurrent neural networks (RNNs, LSTMs and GRUs) that enabled more complex models to rise.
 
-One of the most significant advancements in LLMs came about in 2017, where the "Transformer" architechture was introduced in the paper titled "Attention Is All You Need". It enabled the training of deep neural nets to become highly parallelizable as compared to previous techniques. The attenion mechanism that was introduced not only enabled the development of LLMs with billions of parameters but also found its way into multiple other areas. With the ongoing R&D in this area, it is likely that models will continue to become even more powerful and versatile in the future.
+One of the most significant advancements in LLMs came about in 2017, where the "Transformer" architechture was introduced in the paper titled "Attention Is All You Need". It enabled the training of deep neural nets to become highly parallelizable as compared to previous techniques. The attention mechanism that was introduced not only enabled the development of LLMs with billions of parameters but also found its way into multiple other areas. With the ongoing R&D in this area, it is likely that models will continue to become even more powerful and versatile in the future.
 
 BERT, which is one such model based on the transformer architecture, is what we will be looking at for demonstration and finetuning in this blog.
 
@@ -26,7 +26,7 @@ In this blog, we will be looking at finetuning BERT (a language model developed 
 
 ### What is Masked Language Modelling?
 
-MLM is a task which involves masking/removing (think of it like adding blanks to a sentence to create fill-in-the-blanks style questions) some of the words in a sentence and making a model predict those words based on remaining contextual information. In BERT, this is used as a pre-training task to allow it to learn a general understanding of the language. Masking involves randomly or algorithmically replacing words with a special `[MASK]` token.
+MLM is a task which involves masking/removing some of the words in a sentence and making the model predict those words based on remaining contextual information. Think of it like adding blanks to a sentence to create fill-in-the-blanks style questions. In BERT, this is used as a pre-training task to allow it to learn a general understanding of the language. Masking involves randomly or algorithmically replacing words with a special `[MASK]` token.
 
 An example of masking is as follows:
 
@@ -40,7 +40,7 @@ An example of masking is as follows:
 
 Access to models like BERT has been made very easy over the years, thanks in large part to platforms like Hugging Face, which provides a user-friendly interface for accessing and utilizing pre-trained language models. They also offer a wide range of pre-trained models and tools for finetuning them on specific tasks. With Hugging Face, even those without a deep understanding of machine learning can easily use pre-trained models like BERT to improve the performance of their NLP applications.
 
-Let's dive into some code and get our hands dirty with BERT. The prerequisites for this is that you need a working installation of Python.
+Let's dive into some code and get our hands dirty with BERT. The prerequisites for this is that you need a working installation of Python and have some experience using it.
 
 - Installing the HuggingFace Transformers Library
 
@@ -58,6 +58,8 @@ masked_sentence = "There are so many [MASK] and advancements in the field of AI 
 fill_masker = pipeline(model="distilbert-base-uncased")
 print(json.dumps(fill_masker(masked_sentence), indent=2))
 ```
+
+Look at how simple the code is for getting started with MLM!
 
 Instead of using BERT, the above code uses DistilBERT - a smaller, faster and almost equally performant model. The pipeline invokes the model and retrieves the top 5 (can be changed by passing the `top_k` attribute which defaults to 5) predictions for each mask. Since there are three masks, the model will return a total of 15 predictions (5 for each word). The output is as follows:
 
@@ -105,9 +107,9 @@ As can be seen from the output, the model assigns a confidence "score" for diffe
 
 Since we'd like to finetune BERT, we need to define the task at which we want to make it better. Our goal is to bias the masked word predictions to have more positive sentiment in the context of product reviews at Nike. We can do so by providing the model some labeled data to retrain on, where each sentence has a corresponding positive or negative sentiment.
 
-In simpler words, let's say we have the sentence "Nike shoes are very [MASK]". The predictions that we want for the masked token here are "popular", "durable", "comfortable" as opposed to "expensive", "ugly", "heavy".
+In simpler words, let's say we have the sentence - "Nike shoes are very [MASK]". The predictions that we want for the masked token here are "popular", "durable", "comfortable" as opposed to "expensive", "ugly", "heavy".
 
-For this task, we need a dataset that contains sentence examples of the above format. We could use an online dataset but for the sake of the example, let's synthesize our own. We can do the synthesis using the code below. Basically, we define some hardcoded sentence formats and use it to generate sentences by filling placeholder values like adjectives, products, etc. Note that some sentences created this way will not make complete sense but it doesn't matter much in this task, so long as we are providing the model with enough information about what we are trying to do.
+For this task, we need a dataset that contains sentence examples of the above format. We could use an online dataset but for the sake of this example, let's synthesize our own. To put it simply, we create sentence templates with predetermined structures and insert specific words like adjectives or products into them to generate sentences. While some of the resulting sentences may not make complete sense, it is not a significant issue for this task as long as we are conveying enough information to the model. We can perform the data synthesis using the code below.
 
 <details>
 <summary>Code</summary>
@@ -203,9 +205,51 @@ def create_sample_dataset(dataset_size):
 
 </details>
 
-Now that we have our dataset, we could go ahead and try finetuning our model but it will not really improve the performance much. The model will be fed both positive and negative sentiment data and it may not learn to prioritize the positive sentiment predictions as expected in the task. This is where UpTrain comes in - with just a few lines of code, one can define a "Signal" which can be used as a filter for the dataset. It has other use cases as well, which you can find by checking out the UpTrain repository. Let's take a look at how to use UpTrain signals.
+To perform our data synthesis, we need some basic setup and helper functions. The code for helper functions isn't added here for the sake of clarity of this blog. However, you can find the entire code [here](). With that setup, we can synthesize our data.
 
-In the code below, we define three functions. These functions are callbacks that UpTrain signals will use to determine whether some data from our dataset is relevant to our finetuning task at hand. We can chain multiple signals as well as mix and match them by using simply `&` (combining signals logically with the AND operator) and `|` (combining signals logically with the OR operator) operators.
+<details>
+<summary>Code</summary>
+<br />
+
+```python
+SYNTHESIZED_DATASET_SIZE = 25000
+uptrain_save_fold_name = "uptrain_smart_data_bert"
+synthesized_data_csv = 'data.csv'
+synthesized_data_json = 'data.json'
+
+# Create our own dataset of reviews for different companies, products, etc.
+dataset = create_sample_dataset(SYNTHESIZED_DATASET_SIZE)
+df = pd.DataFrame(dataset['data'])
+df.reset_index(drop=True, inplace=True)
+
+df.to_csv(synthesized_data_csv)
+create_dataset_from_csv(synthesized_data_csv, 'text', synthesized_data_json)
+
+with open(synthesized_data_json) as file:
+    dataset = json.loads(file.read())
+```
+</details>
+
+Let's also create a list of sentences that we would like to test and evaluate our model's performance on before and after finetuning, similar to the example above.
+
+<details>
+<summary>Sentence List</summary>
+<br />
+
+```python
+testing_texts = [
+    "Nike shoes are very [MASK]",
+    "Nike atheletic wear is known for being very [MASK]",
+    "Nike [MASK] shoes are very comfortable",
+    "Trousers and Hoodies made by [MASK] are not very expensive",
+    "Nike tshirts are famous for being [MASK]"
+]
+```
+</details>
+
+Now that we have our dataset and list of sentences for testing, we could try finetuning our model but it will not really improve the performance much. The model will be fed both positive and negative sentiment data and it may not learn to prioritize the positive sentiment predictions as expected in our finetuning task. This is where UpTrain comes in - with just a few lines of code, one can define a "Signal" which can be used as a filter for the dataset. It has other use cases as well, which you can find by checking out the UpTrain repository. Let's take a look at how to use UpTrain signals.
+
+In the code below, we define three functions. These functions are callbacks that UpTrain signals will use to determine whether some data from our dataset is relevant to our task at hand. We can chain multiple signals as well as mix and match them by using `&` (combining signals logically with the AND operator) and `|` (combining signals logically with the OR operator) operators.
 
 <details>
 <summary>Code</summary>
@@ -214,6 +258,7 @@ In the code below, we define three functions. These functions are callbacks that
 ```python
 def nike_text_present_func (inputs, outputs, gts=None, extra_args={}):
     """Checks if the word "Nike" is present in the text or not"""
+
     is_present = []
     for text in inputs["text"]:
         present = False
@@ -285,8 +330,28 @@ framework = uptrain.Framework(cfg)
 
 </details>
 
-There are a few things to look at here. UpTrain provides different Monitors for monitoring performance, checking for data distribution shifts, and collecting edge cases to retrain upon, among other things. Here, we use the EDGE_CASE monitor and provide it with our signals. We also add a data integrity check to make sure that none of our data contains null values. All monitoring related activities will show up on UpTrain's live dashboard. Once processing of this part completes, we will have created a retraining dataset that contains examples that satisfy the requirements of the signals above. This dataset is not only smaller that the original (whether it be synthesized or obtained from a real source) but also contains only specific data that is relevant to the finetuning task.
+With the framework defined, we can process our dataset with UpTrain using the code below. It is a simple loop that iterates over all our data in the dataset and passes it into the framework.
 
-Now that we have our retraining dataset that is specific to our finetuning task, we can begin retraining. HuggingFace provides APIs that make training and finetuning models really simple. To learn how we can do this for the example, checkout the source code for the entire example [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/).
+<details>
+<summary>Code</summary>
+<br />
+
+```python
+for index, sample in enumerate(dataset['data']):
+    if index % 500 == 0:
+        print(f'Processed {index} samples')
+    inputs = {'text': [sample['text']]}
+    framework.log(inputs = inputs, outputs = None)
+
+retraining_csv = uptrain_save_fold_name + '/1/smart_data.csv'
+retraining_json = 'retrain_dataset.json'
+create_dataset_from_csv(retraining_csv, 'text', retraining_json)
+```
+
+</details>
+
+There are a few things to look at here. UpTrain provides different Monitors for monitoring performance, checking for data distribution shifts, and collecting edge cases to retrain upon, among other things. Here, we use the EDGE_CASE monitor and provide it with our signals. We also add a data integrity check to make sure that none of our data contains null values. All monitoring related activities will show up on UpTrain's live dashboard. Once processing of this part completes, we will have created a retraining dataset that contains only those sentences that satisfy the requirements of the signals above. This dataset is not only smaller that the original (whether it be synthesized or obtained from a real source) but also contains only specific data that is relevant to the finetuning task.
+
+Now that we have our retraining dataset tailored to our objective, we can begin with the retraining/finetuning process. HuggingFace offers user-friendly APIs that simplify the training and finetuning of models. If you want to understand how this is done for the above example, please refer to the complete source code available at here [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/).
 
 In conclusion, finetuning large language models like BERT can be a powerful tool for solving specific natural language processing tasks. UpTrain provides a simple and easy to use interface that requires minimal code to perform model monitoring, data drift checks, data integrity checks, edge case detection, model bias tracking, custom metric monitoring and much more. Checkout the UpTrain repository [here](https://github.com/uptrain-ai/uptrain).
