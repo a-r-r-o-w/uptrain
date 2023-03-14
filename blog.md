@@ -22,7 +22,7 @@ BERT, which is one such model based on the transformer architecture, is what we 
 
 Finetuning is the process of taking a pre-trained language model and further training it on a specific task, such as sentiment analysis, to improve its performance on that particular task. This is achieved by taking the pre-trained model and training it on a smaller dataset that is specific to the task. It allows the model to adapt its existing knowledge rather than having to learn everything from scratch.
 
-In this blog, we will be looking at finetuning BERT (a language model developed by Google), that has been pre-trained on a large corpus of text allowing it to capture a wide range of language patterns and contextural relationships. The task that we will be finetuning it on is Masked Language Modelling.
+In this blog, we will be looking at finetuning BERT (a language model developed by Google), that has been pre-trained on a large corpus of text allowing it to capture a wide range of language patterns and contextual relationships. The task that we will be finetuning it on is Masked Language Modelling.
 
 ### What is Masked Language Modelling?
 
@@ -103,7 +103,7 @@ As can be seen from the output, the model assigns a confidence "score" for diffe
 
 ### Finetuning Task
 
-Since we'd like to finetune BERT, we need to define the task at which we want to make it better. Our goal is to bias the masked word predictions to have more positive sentiment. We can do so by providing the model some labeled data to retrain on, where each sentence has a corresponding positive or negative sentiment.
+Since we'd like to finetune BERT, we need to define the task at which we want to make it better. Our goal is to bias the masked word predictions to have more positive sentiment in the context of product reviews at Nike. We can do so by providing the model some labeled data to retrain on, where each sentence has a corresponding positive or negative sentiment.
 
 In simpler words, let's say we have the sentence "Nike shoes are very [MASK]". The predictions that we want for the masked token here are "popular", "durable", "comfortable" as opposed to "expensive", "ugly", "heavy".
 
@@ -203,4 +203,90 @@ def create_sample_dataset(dataset_size):
 
 </details>
 
-The entire code for the finetuning example can be found [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/).
+Now that we have our dataset, we could go ahead and try finetuning our model but it will not really improve the performance much. The model will be fed both positive and negative sentiment data and it may not learn to prioritize the positive sentiment predictions as expected in the task. This is where UpTrain comes in - with just a few lines of code, one can define a "Signal" which can be used as a filter for the dataset. It has other use cases as well, which you can find by checking out the UpTrain repository. Let's take a look at how to use UpTrain signals.
+
+In the code below, we define three functions. These functions are callbacks that UpTrain signals will use to determine whether some data from our dataset is relevant to our finetuning task at hand. We can chain multiple signals as well as mix and match them by using simply `&` (combining signals logically with the AND operator) and `|` (combining signals logically with the OR operator) operators.
+
+<details>
+<summary>Code</summary>
+<br />
+
+```python
+def nike_text_present_func (inputs, outputs, gts=None, extra_args={}):
+    """Checks if the word "Nike" is present in the text or not"""
+    is_present = []
+    for text in inputs["text"]:
+        present = False
+        if text is not None:
+            text = text.lower()
+            present = bool("nike" in text)
+        is_present.append(present)
+    return is_present
+
+def nike_product_keyword_func (inputs, outputs, gts=None, extra_args={}):
+    """Checks if the sentence contains a product associated with Nike or not"""
+
+    is_present = []
+    for text in inputs["text"]:
+        present = False
+        if text is not None:
+            text = text.lower()
+            present = any(word in text for word in PRODUCTS)
+        is_present.append(present)
+    return is_present
+
+def is_positive_sentiment_func (inputs, outputs, gts=None, extra_args={}):
+    """Determines if an input sentence has a positive sentiment or not"""
+
+    vader_sia = SentimentIntensityAnalyzer() # from nltk module
+    is_positive = []
+    for text in inputs["text"]:
+        positive = False
+        if text is not None:
+            text = text.lower()
+            if vader_sia.polarity_scores(text)["compound"] >= 0:
+                positive = any(word in text for word in POSITIVE_SENTIMENT_ADJECTIVES)
+        is_positive.append(positive)
+    return is_positive
+
+cfg = {
+    'checks': [
+        {
+            "type": uptrain.Monitor.EDGE_CASE,
+            "signal_formulae": \
+                uptrain.Signal("Is 'Nike' text present?", nike_text_present_func) &
+                uptrain.Signal("Is it a Nike product?", nike_product_keyword_func) &
+                uptrain.Signal("Is positive sentiment?", is_positive_sentiment_func)
+        },
+
+        {
+            "type": uptrain.Monitor.DATA_INTEGRITY,
+            "measurable_args": {
+                "type": uptrain.MeasurableType.INPUT_FEATURE,
+                "feature_name": "text"
+            },
+            "integrity_type": "non_null"
+        }
+    ],
+
+    # Define where to save the retraining dataset
+    "retraining_folder": uptrain_save_fold_name,
+    
+    # Define when to retrain, define a large number because we
+    # are not retraining yet
+    "retrain_after": 10000000000,
+
+    "logging_args": {"st_logging": True},
+}
+
+dashboard_name = "llm_bert_example"
+framework = uptrain.Framework(cfg)
+```
+
+</details>
+
+There are a few things to look at here. UpTrain provides different Monitors for monitoring performance, checking for data distribution shifts, and collecting edge cases to retrain upon, among other things. Here, we use the EDGE_CASE monitor and provide it with our signals. We also add a data integrity check to make sure that none of our data contains null values. All monitoring related activities will show up on UpTrain's live dashboard. Once processing of this part completes, we will have created a retraining dataset that contains examples that satisfy the requirements of the signals above. This dataset is not only smaller that the original (whether it be synthesized or obtained from a real source) but also contains only specific data that is relevant to the finetuning task.
+
+Now that we have our retraining dataset that is specific to our finetuning task, we can begin retraining. HuggingFace provides APIs that make training and finetuning models really simple. To learn how we can do this for the example, checkout the source code for the entire example [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/).
+
+In conclusion, finetuning large language models like BERT can be a powerful tool for solving specific natural language processing tasks. UpTrain provides a simple and easy to use interface that requires minimal code to perform model monitoring, data drift checks, data integrity checks, edge case detection, model bias tracking, custom metric monitoring and much more. Checkout the UpTrain repository [here](https://github.com/uptrain-ai/uptrain).
