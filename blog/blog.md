@@ -10,6 +10,8 @@ The "Large" part signifies that LLMs are a kind of deep learning algorithm. They
 
 Today, there is a growing number of LLMs that are gaining recognition, including GPT (most notably, ChatGPT), Codex, BLOOM, BERT, LLaMA, LaMDA, and PaLM. To enable the development and training of these complex models, large technology companies are leading the way as they possess the infrastructure and expertise. These companies possess the know-how and compute to train and fine-tune models, allowing them to achieve impressive results across a wide range of natural language processing tasks.
 
+---
+
 ### History of Large Language Models
 
 LLMs have had significant evolution since their origin. The first models were shallow and relied on the n-gram technique that simply counted occurrences of words or phrases. Later on, neural language models came about, such as recurrent neural networks (RNNs, LSTMs and GRUs) that enabled more complex models to rise.
@@ -18,11 +20,15 @@ One of the most significant advancements in LLMs came about in 2017, where the "
 
 BERT, which is one such model based on the transformer architecture, is what we will be looking at for demonstration and finetuning in this blog.
 
+---
+
 ### What is Finetuning?
 
 Finetuning is the process of taking a pre-trained language model and further training it on a specific task, such as sentiment analysis, to improve its performance on that particular task. This is achieved by taking the pre-trained model and training it on a smaller dataset that is specific to the task. It allows the model to adapt its existing knowledge rather than having to learn everything from scratch.
 
 In this blog, we will be looking at finetuning BERT (a language model developed by Google), that has been pre-trained on a large corpus of text allowing it to capture a wide range of language patterns and contextual relationships. The task that we will be finetuning it on is Masked Language Modelling.
+
+---
 
 ### What is Masked Language Modelling?
 
@@ -36,19 +42,23 @@ An example of masking is as follows:
 
 **Probable Mask Prediction**: There are so many [innovations] and advancements in the field of AI and [technology] these days. What a time to be [alive]!
 
+---
+
 ### Getting started with BERT
 
 Access to models like BERT has been made very easy over the years, thanks in large part to platforms like Hugging Face, which provides a user-friendly interface for accessing and utilizing pre-trained language models. They also offer a wide range of pre-trained models and tools for finetuning them on specific tasks. With Hugging Face, even those without a deep understanding of machine learning can easily use pre-trained models like BERT to improve the performance of their NLP applications.
 
 Let's dive into some code and get our hands dirty with BERT. The prerequisites for this is that you need a working installation of Python and have some experience using it.
 
-- Installing the HuggingFace Transformers Library
+#### Step 1 - Installing Required Libraries and Basics
+
+Start by installing all the required libraries that we will be using throught the example.
 
 ```
-pip install transformers
+pip install torch 'transformers[torch]' datasets ipywidgets nltk matplotlib==3.6.0 seaborn uptrain
 ```
 
-- Create a Python file or Jupyter notebook with the following code:
+Create a Python file or Jupyter notebook with the following code:
 
 ```python
 import json
@@ -103,11 +113,15 @@ Instead of using BERT, the above code uses DistilBERT - a smaller, faster and al
 
 As can be seen from the output, the model assigns a confidence "score" for different predictions. It then sorts them based on this score and higher score predictions show up in the top_k outputs.
 
+---
+
 ### Finetuning Task
 
 Since we'd like to finetune BERT, we need to define the task at which we want to make it better. Our goal is to bias the masked word predictions to have more positive sentiment in the context of product reviews at Nike. We can do so by providing the model some labeled data to retrain on, where each sentence has a corresponding positive or negative sentiment.
 
 In simpler words, let's say we have the sentence - "Nike shoes are very [MASK]". The predictions that we want for the masked token here are "popular", "durable", "comfortable" as opposed to "expensive", "ugly", "heavy".
+
+#### Step 2 - Collecting/Synthesizing Datasets
 
 For this task, we need a dataset that contains sentence examples of the above format. We could use an online dataset but for the sake of this example, let's synthesize our own. To put it simply, we create sentence templates with predetermined structures and insert specific words like adjectives or products into them to generate sentences. While some of the resulting sentences may not make complete sense, it is not a significant issue for this task as long as we are conveying enough information to the model. We can perform the data synthesis using the code below.
 
@@ -205,7 +219,7 @@ def create_sample_dataset(dataset_size):
 
 </details>
 
-To perform our data synthesis, we need some basic setup and helper functions. The code for helper functions isn't added here for the sake of clarity of this blog. However, you can find the entire code [here](). With that setup, we can synthesize our data.
+To perform our data synthesis, we need some basic setup and helper functions. The code for helper functions isn't added here for the sake of clarity of this blog. However, you can find the entire code [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/). With that set up, we can synthesize our data.
 
 <details>
 <summary>Code</summary>
@@ -230,7 +244,7 @@ with open(synthesized_data_json) as file:
 ```
 </details>
 
-Let's also create a list of sentences that we would like to test and evaluate our model's performance on before and after finetuning, similar to the example above.
+Let's also create a list of sentences that we will use to test and evaluate our model's performance on before and after finetuning, similar to the initial example above.
 
 <details>
 <summary>Sentence List</summary>
@@ -246,6 +260,8 @@ testing_texts = [
 ]
 ```
 </details>
+
+#### Step 3 - Integrating UpTrain
 
 Now that we have our dataset and list of sentences for testing, we could try finetuning our model but it will not really improve the performance much. The model will be fed both positive and negative sentiment data and it may not learn to prioritize the positive sentiment predictions as expected in our finetuning task. This is where UpTrain comes in - with just a few lines of code, one can define a "Signal" which can be used as a filter for the dataset. It has other use cases as well, which you can find by checking out the UpTrain repository. Let's take a look at how to use UpTrain signals.
 
@@ -330,6 +346,8 @@ framework = uptrain.Framework(cfg)
 
 </details>
 
+#### Step 4 - Generating Finetuning Dataset using UpTrain
+
 With the framework defined, we can process our dataset with UpTrain using the code below. It is a simple loop that iterates over all our data in the dataset and passes it into the framework.
 
 <details>
@@ -352,7 +370,11 @@ create_dataset_from_csv(retraining_csv, 'text', retraining_json)
 
 There are a few things to look at here. UpTrain provides different Monitors for monitoring performance, checking for data distribution shifts, and collecting edge cases to retrain upon, among other things. Here, we use the EDGE_CASE monitor and provide it with our signals. We also add a data integrity check to make sure that none of our data contains null values. All monitoring related activities will show up on UpTrain's live dashboard. Once processing of this part completes, we will have created a retraining dataset that contains only those sentences that satisfy the requirements of the signals above. This dataset is not only smaller that the original (whether it be synthesized or obtained from a real source) but also contains only specific data that is relevant to the finetuning task.
 
+#### Step 5 - Finetuning the model
+
 Now that we have our retraining dataset tailored to our objective, we can begin with the retraining/finetuning process. HuggingFace offers user-friendly APIs that simplify the training and finetuning of models. If you want to understand how this is done for the above example, please refer to the complete source code available at here [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/).
+
+#### Step 6 - Evaluation and Visualization
 
 After finetuning is performed, we can visualize the different metrics that are used to study the performance of large language models. Two such metrics that we'll take a look at are [training/validation loss](https://en.wikipedia.org/wiki/Training,_validation,_and_test_data_sets) and [perplexity](https://www.wikiwand.com/en/Perplexity).
 
