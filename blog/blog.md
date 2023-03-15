@@ -123,103 +123,43 @@ In simpler words, let's say we have the sentence - "Nike shoes are very [MASK]".
 
 #### Step 2 - Collecting/Synthesizing Datasets
 
-For this task, we need a dataset that contains sentence examples of the above format. We could use an online dataset but for the sake of this example, let's synthesize our own. To put it simply, we create sentence templates with predetermined structures and insert specific words like adjectives or products into them to generate sentences. While some of the resulting sentences may not make complete sense, it is not a significant issue for this task as long as we are conveying enough information to the model. We can perform the data synthesis using the code below.
+For this task, we need a dataset that contains sentence examples of the above format. We could use an online dataset but for the sake of this example, let's synthesize our own. To put it simply, we create sentence templates with predetermined structures and insert specific words like adjectives or products into them to generate sentences. While some of the resulting sentences may not make complete sense, it is not a significant issue for this task as long as we are conveying enough information to the model. We can perform the data synthesis using the psuedo-code below. For the sake of simplicity of this blog, the exact source code is not added here. However, all relevant code can be found [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/).
 
 <details>
 <summary>Code</summary>
 <br />
 
 ```python
-PRODUCTS = [
-    'gym wear', 'jackets', 'shirts',
-    'running shoes', 'basketballs', 'caps', 'pants', 'socks',
-    'trousers', 'training shoes', 'basketball shoes', 'shoes',
-    'athletic wear', 'sports wear', 'footballs',
-    'performance gear', 'hats', 'sweaters', 'tshirts', 'wristbands',
-    'backpacks', 'tshirts', 'hoodies', 'trainers',
-    'soccer shoes',
-]
+PRODUCTS = <List of Products manufactured by Nike>
 
-POSITIVE_SENTIMENT_ADJECTIVES = [
-    'user-friendly', 'innovative', 'support', 'good-looking', 'efficient',
-    'stylish', 'breathable', 'flexibility', 'trendsetting', 'performance',
-    'impressive', 'resilient', 'durability', 'durable', 'athletic', 'breathability',
-    'cheap', 'comfort', 'comfortable', 'inexpensive', 'premium', 'sleek',
-    'performance-oriented', 'fashionable', 'quality', 'flexible', 'stability',
-    'look', 'functional', 'sporty', 'lightweight', 'bounce', 'grip', 'modern',
-    'fit', 'ergonomic', 'versatile', 'style', 'design', 'cushioning', 'traction',
-    'high-quality', 'revolutionary'
-]
+POSITIVE_SENTIMENT_ADJECTIVES = <List of Positive Sentiment Adjectives>
 
-NEGATIVE_SENTIMENT_ADJECTIVES = [
-    'uncomfortable', 'flimsy', 'poor quality', 'outdated', 'unfashionable',
-    'heavy', 'inferior', 'unathletic', 'expensive', 'costly',
-    'overpriced', 'defective', 'ugly', 'dirty', 'faulty',
-    'non-durable', 'tacky', 'lacking in performance', 'clunky', 'bulky',
-    'awkward', 'disappointing', 'unreliable', 'displeasing', 'unsatisfactory'
-]
+NEGATIVE_SENTIMENT_ADJECTIVES = <List of Negative Sentiment Adjectives>
 
 ADJECTIVES = POSITIVE_SENTIMENT_ADJECTIVES + NEGATIVE_SENTIMENT_ADJECTIVES
 
-COMPANIES = [
-    # repeat a couple of times for higher positive examples of Nike
-    'nike', 'nike', 'nike', 'nike', 'nike', 'nike', 'nike', 'adidas', 'puma',
-    'under armour', 'reebok', 'converse', 'vans', 'fila', 'asics'
-]
+COMPANIES = <List of companies that make sports gear>
 
-JOINERS = [
-    'are', 'is', 'offer', 'provide', 'feature', 'boast',
-    'are known for being', 'are recognized for being', 'are famous for being',
-    'are renowned for being', 'are praised for being',
-]
+JOINERS = <Joiner phrases in English> # for example: are famous for, offer, etc.
 
-def create_sample_dataset(dataset_size):
-    # We will also add some null values to the dataset to demonstrate
-    # the Data Integrity capabilities of UpTrain
-    nullify_ratio = 0.05
-    nullify_count = int(nullify_ratio * dataset_size)
-    data = {
-        "version": "0.1.0",
-        "source": "sample",
-        "url": "self-generated",
-        "data": []
-    }
-    sentences = []
-
-    for _ in range(dataset_size):
-        company = random.choice(COMPANIES)
-        joiner = random.choice(JOINERS)
-        product = random.choice(PRODUCTS)
-        label = random.randint(0, 3)
-
-        # We bias the positive sentiment data to have a higher ratio
-        if label == 0:
-            adjective = random.choice(NEGATIVE_SENTIMENT_ADJECTIVES)
-        else:
-            label = 1
-            adjective = random.choice(POSITIVE_SENTIMENT_ADJECTIVES)
-
-        # Additionally, you could expand on list of possible sentences
-        # or use a combination of real-life datasets
-        if random.randint(0, 1) == 0:
-            sentence = f'{company} {product} {joiner} {adjective}'
-        else:
-            sentence = f'{product} made by {company} {joiner} {adjective}'
-        
-        sentences.append({ "text": sentence, "label": label })
+def create_sample_dataset(dataset_size: int):
+    data = []
     
-    # Make some values null to make sure UpTrain data integrity check is working
-    for _ in range(nullify_count):
-        element = random.choice(sentences)
-        element['text'] = None
+    for i = 1 to dataset_size:
+        sentence = randomly generate a sentence using COMPANIES, JOINERS, PRODUCTS, and sentiment adjectives
+        label = positive or negative depending on adjective used in sentence
+        data.append((sentence, label))
     
-    data["data"] = sentences
+    # Since we're synthesizing our own dataset and not a real-life dataset, let's
+    # nullify some values because real-life datasets will usually also have null
+    # data. This can be monitored with UpTrain that we will be looking into later
+    randomly nullify 5% of the sentence text in data
     return data
 ```
 
 </details>
 
-To perform our data synthesis, we need some basic setup and helper functions. The code for helper functions isn't added here for the sake of clarity of this blog. However, you can find the entire code [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/). With that set up, we can synthesize our data.
+To perform our data synthesis, we need some basic setup and helper functions. Again, you can find the entire source code for reference in using the shared link above. With that set up, we can synthesize our data.
 
 <details>
 <summary>Code</summary>
@@ -227,20 +167,8 @@ To perform our data synthesis, we need some basic setup and helper functions. Th
 
 ```python
 SYNTHESIZED_DATASET_SIZE = 25000
-uptrain_save_fold_name = "uptrain_smart_data_bert"
-synthesized_data_csv = 'data.csv'
-synthesized_data_json = 'data.json'
-
-# Create our own dataset of reviews for different companies, products, etc.
 dataset = create_sample_dataset(SYNTHESIZED_DATASET_SIZE)
-df = pd.DataFrame(dataset['data'])
-df.reset_index(drop=True, inplace=True)
-
-df.to_csv(synthesized_data_csv)
-create_dataset_from_csv(synthesized_data_csv, 'text', synthesized_data_json)
-
-with open(synthesized_data_json) as file:
-    dataset = json.loads(file.read())
+save(dataset)
 ```
 </details>
 
@@ -265,7 +193,7 @@ testing_texts = [
 
 Now that we have our dataset and list of sentences for testing, we could try finetuning our model but it will not really improve the performance much. The model will be fed both positive and negative sentiment data and it may not learn to prioritize the positive sentiment predictions as expected in our finetuning task. This is where UpTrain comes in - with just a few lines of code, one can define a "Signal" which can be used as a filter for the dataset. It has other use cases as well, which you can find by checking out the UpTrain repository. Let's take a look at how to use UpTrain signals.
 
-In the code below, we define three functions. These functions are callbacks that UpTrain signals will use to determine whether some data from our dataset is relevant to our task at hand. We can chain multiple signals as well as mix and match them by using `&` (combining signals logically with the AND operator) and `|` (combining signals logically with the OR operator) operators.
+In the pseudocode below, we define three functions. These functions are callbacks that UpTrain signals will use to determine whether some data from our dataset is relevant to our task at hand. We can chain multiple signals as well as mix and match them by using `&` (combining signals logically with the AND operator) and `|` (combining signals logically with the OR operator) operators.
 
 <details>
 <summary>Code</summary>
@@ -274,43 +202,28 @@ In the code below, we define three functions. These functions are callbacks that
 ```python
 def nike_text_present_func (inputs, outputs, gts=None, extra_args={}):
     """Checks if the word "Nike" is present in the text or not"""
-
     is_present = []
-    for text in inputs["text"]:
-        present = False
-        if text is not None:
-            text = text.lower()
-            present = bool("nike" in text)
-        is_present.append(present)
+    for sentence in inputs:
+        is_present.append(bool(sentence contains "nike"))
     return is_present
 
 def nike_product_keyword_func (inputs, outputs, gts=None, extra_args={}):
     """Checks if the sentence contains a product associated with Nike or not"""
-
     is_present = []
-    for text in inputs["text"]:
-        present = False
-        if text is not None:
-            text = text.lower()
-            present = any(word in text for word in PRODUCTS)
-        is_present.append(present)
+    for sentence in inputs:
+        is_present.append(bool(sentence contains a product associated with Nike))
     return is_present
 
 def is_positive_sentiment_func (inputs, outputs, gts=None, extra_args={}):
     """Determines if an input sentence has a positive sentiment or not"""
-
-    vader_sia = SentimentIntensityAnalyzer() # from nltk module
     is_positive = []
-    for text in inputs["text"]:
-        positive = False
-        if text is not None:
-            text = text.lower()
-            if vader_sia.polarity_scores(text)["compound"] >= 0:
-                positive = any(word in text for word in POSITIVE_SENTIMENT_ADJECTIVES)
-        is_positive.append(positive)
+    for sentence in inputs:
+        is_present.append(bool(sentence has positive sentiment))
     return is_positive
 
+# Define the UpTrain Configuration
 cfg = {
+    # Define checks that should be performed on the data
     'checks': [
         {
             "type": uptrain.Monitor.EDGE_CASE,
@@ -346,24 +259,24 @@ framework = uptrain.Framework(cfg)
 
 </details>
 
+The explanation for the above code can be found after completion of Step 4.
+
 #### Step 4 - Generating Finetuning Dataset using UpTrain
 
-With the framework defined, we can process our dataset with UpTrain using the code below. It is a simple loop that iterates over all our data in the dataset and passes it into the framework.
+With the framework defined, we can process our dataset with UpTrain using the pseudocode below. It is a simple loop that iterates over all our data in the dataset and passes it into the framework.
 
 <details>
 <summary>Code</summary>
 <br />
 
 ```python
-for index, sample in enumerate(dataset['data']):
-    if index % 500 == 0:
-        print(f'Processed {index} samples')
-    inputs = {'text': [sample['text']]}
-    framework.log(inputs = inputs, outputs = None)
+for sample in dataset:
+    # We are processing data one at a time but note that you can pass data in
+    # batches too by providing more than one value in the list
+    inputs = { 'text': [ sample['text'], ] }
+    framework.log(inputs=inputs)
 
-retraining_csv = uptrain_save_fold_name + '/1/smart_data.csv'
-retraining_json = 'retrain_dataset.json'
-create_dataset_from_csv(retraining_csv, 'text', retraining_json)
+retraining_dataset = load_dataset(uptrain_save_fold_name)
 ```
 
 </details>
@@ -372,7 +285,7 @@ There are a few things to look at here. UpTrain provides different Monitors for 
 
 #### Step 5 - Finetuning the model
 
-Now that we have our retraining dataset tailored to our objective, we can begin with the retraining/finetuning process. HuggingFace offers user-friendly APIs that simplify the training and finetuning of models. If you want to understand how this is done for the above example, please refer to the complete source code available at here [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/).
+Now that we have our retraining dataset tailored to our objective, we can begin with the retraining/finetuning process. HuggingFace offers user-friendly APIs that simplify the training and finetuning of models. If you want to understand how this is done for the above example, please refer to the complete source code available [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/).
 
 #### Step 6 - Evaluation and Visualization
 
