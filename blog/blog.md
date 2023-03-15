@@ -424,6 +424,8 @@ We can also visualize the mask prediction confidence for different predictions, 
 
 ![predictions.png](./predictions.png)
 
+---
+
 And with that, we have learnt how to finetune a Large Language Model as well as how to use UpTrain for improving model performance and monitoring!
 
 In conclusion, finetuning large language models like BERT can be a powerful tool for solving specific natural language processing tasks. UpTrain provides a simple and easy to use interface that requires minimal code to perform model monitoring, data drift checks, data integrity checks, edge case detection, model bias tracking, custom metric monitoring and much more. Checkout the UpTrain repository [here](https://github.com/uptrain-ai/uptrain).
