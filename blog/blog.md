@@ -8,13 +8,13 @@ A "Language Model" is a machine learning model trained to perform well on tasks 
 
 The "Large" part signifies that LLMs are deep learning algorithms. They have millions to billions (and now even trillions, as in the case of GPT-4) of trainable parameters. This massive amount of parameters enables LLMs to achieve exceptional performance across a wide range of tasks.
 
-Today, a growing number of LLMs are gaining recognition, including GPT (most notably, ChatGPT), Codex, BLOOM, BERT, LLaMA, LaMDA, and PaLM. To enable the development and training of these complex models, large technology companies are leading the way as they possess the infrastructure and expertise. These companies possess the know-how and computational resources to train and fine-tune models, allowing them to achieve impressive results across a wide range of natural language processing tasks.
+Today, a growing number of LLMs are gaining recognition, including GPT (most notably, [ChatGPT](https://openai.com/blog/chatgpt)), [Codex](https://openai.com/blog/openai-codex), [BLOOM](https://huggingface.co/bigscience/bloom), [BERT](https://ai.googleblog.com/2018/11/open-sourcing-bert-state-of-art-pre.html), [LLaMA](https://ai.facebook.com/blog/large-language-model-llama-meta-ai/), [LaMDA](https://ai.googleblog.com/2022/01/lamda-towards-safe-grounded-and-high.html), and [PaLM](https://ai.googleblog.com/2022/04/pathways-language-model-palm-scaling-to.html). To enable the development and training of these complex models, large technology companies are leading the way as they possess the infrastructure and expertise. These companies possess the know-how and computational resources to train and fine-tune models, allowing them to achieve impressive results across a wide range of natural language processing tasks.
 
 ---
 
 ### History of Large Language Models
 
-LLMs have had significant evolution since their origin. The first models were shallow and relied on the n-gram technique that just counted occurrences of words or phrases. Later on, neural language models came about, such as recurrent neural networks (RNNs, LSTMs and GRUs) that enabled more complex models to rise.
+LLMs have had significant evolution since their origin. The first models were shallow and relied on the n-gram technique that simply counted occurrences of words or phrases. Later on, neural language models came about, such as recurrent neural networks (RNNs, LSTMs and GRUs) that enabled more complex models to rise.
 
 One of the most significant advancements in LLMs came about in 2017 when the "Transformer" architecture was introduced in the paper "Attention Is All You Need". It enabled the training of deep neural nets to become highly parallelizable compared to previous techniques. The attention mechanism introduced not only enabled the development of LLMs with billions of parameters but also found its way into multiple other areas. With the ongoing R&D in this area, models will likely become even more powerful and versatile in the future.
 
@@ -26,13 +26,13 @@ BERT, which is one such model based on transformer architecture, is what we will
 
 Fine-tuning is the process of taking a pre-trained language model and further training it on a specific task, such as sentiment analysis, to improve its performance on that particular task. This is achieved by taking the pre-trained model and training it on a smaller dataset that is specific to the task. It allows the model to adapt its existing knowledge rather than having to learn everything from scratch.
 
-In this blog, we will look at fine-tuning BERT (a language model developed by Google), which has been pre-trained on a large corpus of text, allowing it to capture a wide range of language patterns and contextual relationships. The task that we will be fine-tuning is Masked Language Modelling.
+In this blog, we will look at fine-tuning BERT (a language model developed by Google), which has been pre-trained on a large corpus of text allowing it to capture a wide range of language patterns and contextual relationships. The task that we will be fine-tuning the model on is Masked Language Modelling.
 
 ---
 
 ### What is Masked Language Modelling?
 
-MLM (Masked Language Modelling) is a task which involves masking/removing some of the words in a sentence and making the model predict those words based on remaining contextual information. Think of it as adding blanks to a sentence to create fill-in-the-blanks-style questions. In BERT, this is used as a pre-training task to allow it to gain a general understanding of the language. Masking involves randomly or algorithmically replacing words with a special `[MASK]` token.
+MLM is a task which involves masking/removing some of the words in a sentence and making the model predict those words based on remaining contextual information. Think of it as adding blanks to a sentence to create fill-in-the-blanks style questions. In BERT, this is used as a pre-training task to allow it to learn a general understanding of the language. Masking involves randomly or algorithmically replacing words with a special `[MASK]` token.
 
 An example of masking is as follows:
 
@@ -123,7 +123,7 @@ In simpler words, let's say we have the sentence - "Nike shoes are very [MASK]".
 
 #### Step 2 - Collecting/Synthesizing Datasets
 
-For this task, we need a dataset that contains sentence examples of the above format. We could use an online dataset, but for the sake of this example, let's synthesize our own. To put it simply, we create sentence templates with predetermined structures and insert specific words like adjectives or products into them to generate sentences. While some of the resulting sentences may not make complete sense, it is not a significant issue for this task as long as we convey enough information to the model. We can perform the data synthesis using the pseudocode below. For the sake of the simplicity of this blog, we haven't included the exact source code here. However, all relevant code can be found [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/).
+For this task, we need a dataset that contains sentence examples of the above format. We could use an online dataset, but for the sake of this example, let's synthesize our own. To put it simply, we create sentence templates with predetermined structures and insert specific words like adjectives or products into them to generate sentences. While some of the resulting sentences may not make complete sense, it is not a significant issue for this task as long as we convey enough information to the model. We can perform the data synthesis using the pseudocode below. For the sake of the simplicity of this blog, we haven't included the exact source code. However, all relevant code can be found [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/).
 
 <details>
 <summary>Code</summary>
@@ -246,7 +246,7 @@ cfg = {
     # Define where to save the retraining dataset
     "retraining_folder": uptrain_save_fold_name,
     
-    # Define when to retrain; define a large number because we
+    # Define when to retrain. Use a large number because we
     # are not retraining yet
     "retrain_after": 10000000000,
 
@@ -281,7 +281,7 @@ retraining_dataset = load_dataset(uptrain_save_fold_name)
 
 </details>
 
-There are a few things to look at here. UpTrain provides different Monitors for monitoring performance, checking for data distribution shifts, and collecting edge cases to retrain upon, among other things. Here, we use the EDGE_CASE monitor and provide it with our signals. We also add a data integrity check to ensure that none of our data contains null values. All monitoring-related activities will show up on UpTrain's live dashboard. Once processing completes, we will have created a retraining dataset that contains only those sentences that satisfy the requirements of the signals above. This dataset is not only smaller than the original (whether it be synthesized or obtained from a reliable source) but also contains only specific data that is relevant to the fine-tuning task.
+There are a few things to look at here. UpTrain provides different Monitors for monitoring performance, checking for data distribution shifts, and collecting edge cases to retrain upon, among other things. Here, we use the EDGE_CASE monitor and provide it with our signals. We also add a data integrity check to ensure that none of our data contains null values. All monitoring related activities will show up on UpTrain's live dashboard. Once processing completes, we will have created a retraining dataset that contains only those sentences that satisfy the requirements of the signals above. This dataset is not only smaller than the original (whether it be synthesized or obtained from a real-world source) but also contains only specific data that is relevant to the fine-tuning task.
 
 #### Step 5 - Fine-tuning the model
 
@@ -301,7 +301,7 @@ After fine-tuning, we can visualize the different metrics used to study the perf
 
 The code for plotting is available in the linked notebook above. We can see that the model's performance on our fine-tuning dataset improves with time as the values for both the loss and perplexity decrease. This is great!
 
-Let's see the model's predictions on our pre-defined test sentences and verify whether the model became better at our defined fine-tuning task.
+Let's see the model's predictions on our pre-defined test sentences and verify whether the model became better at our defined task.
 
 <details>
 <summary>Predictions</summary>
@@ -331,7 +331,7 @@ Fine-tuned Top tokens: ['inexpensive', 'cheap', 'lightweight', 'versatile', 'dur
 
 </details>
 
-We can see from the above output that the model is doing much better at predicting masked words with positive sentiment associated with them. In the first example, the model no longer predicts masked words such as "expensive" among its top 5 predictions, which is exactly what we want! An interesting case to look at is the predictions for example 3. We no longer have swim shoes!
+We can see from the above output that the model is doing much better at predicting masked words with positive sentiment associated to them. In the first example, the model no longer predicts masked words such as "expensive" among its top 5 predictions, which is exactly what we want! An interesting case to look at is the predictions for example 3. We no longer have swim shoes!
 
 We can also visualize the mask prediction confidence for different predictions, which is a helpful way of visualizing what words the model thinks are good substitutions. The code for this can be found in the linked notebook.
 
