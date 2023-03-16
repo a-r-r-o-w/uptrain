@@ -26,7 +26,7 @@ BERT, which is one such model based on transformer architecture, is what we will
 
 Fine-tuning is the process of taking a pre-trained language model and further training it on a specific task, such as sentiment analysis, to improve its performance on that particular task. This is achieved by taking the pre-trained model and training it on a smaller dataset that is specific to the task. It allows the model to adapt its existing knowledge rather than having to learn everything from scratch.
 
-In this blog, we will look at fine-tuning BERT (a language model developed by Google), which has been pre-trained on a large corpus of text, allowing it to capture a wide range of language patterns and contextual relationships. The task that we will be fine-tuning on is Masked Language Modelling.
+In this blog, we will look at fine-tuning BERT (a language model developed by Google), which has been pre-trained on a large corpus of text, allowing it to capture a wide range of language patterns and contextual relationships. The task that we will be fine-tuning is Masked Language Modelling.
 
 ---
 
@@ -123,7 +123,7 @@ In simpler words, let's say we have the sentence - "Nike shoes are very [MASK]".
 
 #### Step 2 - Collecting/Synthesizing Datasets
 
-For this task, we need a dataset that contains sentence examples of the above format. We could use an online dataset, but for the sake of this example, let's synthesize our own. To put it simply, we create sentence templates with predetermined structures and insert specific words like adjectives or products into them to generate sentences. While some of the resulting sentences may not make complete sense, it is not a significant issue for this task as long as we convey enough information to the model. We can perform the data synthesis using the pseudocode below. For the sake of the simplicity of this blog, we haven't included the exact source code here. However, all relevant code can be found [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/fine-tuning_LLM/).
+For this task, we need a dataset that contains sentence examples of the above format. We could use an online dataset, but for the sake of this example, let's synthesize our own. To put it simply, we create sentence templates with predetermined structures and insert specific words like adjectives or products into them to generate sentences. While some of the resulting sentences may not make complete sense, it is not a significant issue for this task as long as we convey enough information to the model. We can perform the data synthesis using the pseudocode below. For the sake of the simplicity of this blog, we haven't included the exact source code here. However, all relevant code can be found [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/).
 
 <details>
 <summary>Code</summary>
@@ -153,7 +153,7 @@ def create_sample_dataset(dataset_size: int):
     # Since we're synthesizing our own dataset and not a real-life dataset, let's
     # nullify some values because real-life datasets will usually also have null
     # data. This can be monitored with UpTrain which we will be looking into later
-    randomly nullify 5% of the sentence text in the data
+    randomly nullify 5% of the sentence text in data
     return data
 ```
 
@@ -285,7 +285,7 @@ There are a few things to look at here. UpTrain provides different Monitors for 
 
 #### Step 5 - Fine-tuning the model
 
-Now that we have our retraining dataset tailored to our objective, we can begin with the retraining/fine-tuning process. HuggingFace offers user-friendly APIs that simplify the training and fine-tuning of models. If you wish to understand how to do this for the above example, please refer to the complete source code available [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/fine-tuning_LLM/).
+Now that we have our retraining dataset tailored to our objective, we can begin with the retraining/fine-tuning process. HuggingFace offers user-friendly APIs that simplify the training and fine-tuning of models. If you wish to understand how to do this for the above example, please refer to the complete source code available [here](https://github.com/uptrain-ai/uptrain/blob/main/examples/finetuning_LLM/).
 
 #### Step 6 - Evaluation and Visualization
 
